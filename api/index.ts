@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import AV from 'leancloud-storage';
+import crypto from 'crypto'; // 新增：导入crypto模块
 
 // 初始化LeanCloud - 从环境变量获取配置
 AV.init({
@@ -12,6 +13,16 @@ AV.init({
 if (!process.env.LEANCLOUD_APP_ID || !process.env.LEANCLOUD_APP_KEY || !process.env.LEANCLOUD_SERVER_URL) {
   console.error('请配置LeanCloud环境变量: LEANCLOUD_APP_ID, LEANCLOUD_APP_KEY, LEANCLOUD_SERVER_URL');
 }
+
+// 辅助函数：使用Buffer进行Base64编码（替代btoa，支持所有字符）
+const base64Encode = (str: string): string => {
+  return Buffer.from(str, 'utf8').toString('base64');
+};
+
+// 辅助函数：使用Buffer进行Base64解码（替代atob）
+const base64Decode = (base64Str: string): string => {
+  return Buffer.from(base64Str, 'base64').toString('utf8');
+};
 
 // 数据模型定义
 interface DataItem {
@@ -33,12 +44,12 @@ export async function createData(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ message: '标题、内容和密码为必填项' });
     }
     
-    // 创建密码哈希和内容加密
+    // 创建密码哈希和内容加密 - 使用Buffer替代btoa
     const encoder = new TextEncoder();
     const data = encoder.encode(password + '|' + content);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const passwordHash = Buffer.from(hashBuffer).toString('base64');
-    const encryptedContent = btoa(content);
+    const encryptedContent = base64Encode(content); // 修改：使用自定义编码函数
     
     // 创建LeanCloud对象
     const Data = AV.Object.extend('Data');
@@ -58,7 +69,10 @@ export async function createData(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error) {
     console.error('创建数据失败:', error);
-    return res.status(500).json({ message: '创建数据失败，请稍后再试' });
+    return res.status(500).json({ 
+      message: '创建数据失败，请稍后再试',
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    });
   }
 }
 
@@ -75,10 +89,10 @@ export async function getData(req: VercelRequest, res: VercelResponse) {
     const query = new AV.Query('Data');
     const dataObj = await query.get(id);
     
-    // 验证密码
+    // 验证密码 - 使用Buffer替代atob
     const encryptedContent = dataObj.get('content');
     const passwordHash = dataObj.get('passwordHash');
-    const content = atob(encryptedContent);
+    const content = base64Decode(encryptedContent); // 修改：使用自定义解码函数
     
     // 验证密码
     const encoder = new TextEncoder();
@@ -100,7 +114,7 @@ export async function getData(req: VercelRequest, res: VercelResponse) {
       content: content,
       type: dataObj.get('type'),
       views: dataObj.get('views'),
-      createdAt: dataObj.get('createdAt').toISOString()
+      createdAt: dataObj.get('createdAt')?.toISOString() // 修改：添加可选链操作符
     });
   } catch (error) {
     console.error('获取数据失败:', error);
@@ -121,10 +135,10 @@ export async function updateData(req: VercelRequest, res: VercelResponse) {
     const query = new AV.Query('Data');
     const dataObj = await query.get(id);
     
-    // 验证当前密码
+    // 验证当前密码 - 使用Buffer替代atob
     const encryptedContent = dataObj.get('content');
     const passwordHash = dataObj.get('passwordHash');
-    const originalContent = atob(encryptedContent);
+    const originalContent = base64Decode(encryptedContent); // 修改：使用自定义解码函数
     
     const encoder = new TextEncoder();
     const verifyData = encoder.encode(currentPassword + '|' + originalContent);
@@ -138,11 +152,11 @@ export async function updateData(req: VercelRequest, res: VercelResponse) {
     // 确定使用的密码（新密码或现有密码）
     const passwordToUse = newPassword || currentPassword;
     
-    // 加密新内容
+    // 加密新内容 - 使用Buffer替代btoa
     const newData = encoder.encode(passwordToUse + '|' + content);
     const newHashBuffer = await crypto.subtle.digest('SHA-256', newData);
     const newPasswordHash = Buffer.from(newHashBuffer).toString('base64');
-    const newEncryptedContent = btoa(content);
+    const newEncryptedContent = base64Encode(content); // 修改：使用自定义编码函数
     
     // 更新数据
     dataObj.set('title', title);
@@ -175,10 +189,10 @@ export async function deleteData(req: VercelRequest, res: VercelResponse) {
     const query = new AV.Query('Data');
     const dataObj = await query.get(id);
     
-    // 验证密码
+    // 验证密码 - 使用Buffer替代atob
     const encryptedContent = dataObj.get('content');
     const passwordHash = dataObj.get('passwordHash');
-    const content = atob(encryptedContent);
+    const content = base64Decode(encryptedContent); // 修改：使用自定义解码函数
     
     const encoder = new TextEncoder();
     const data = encoder.encode(password + '|' + content);
@@ -201,14 +215,21 @@ export async function deleteData(req: VercelRequest, res: VercelResponse) {
 
 // 主API处理函数
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // 设置CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  // 设置CORS - 更严格的配置
+  res.setHeader('Access-Control-Allow-Origin', process.env.NODE_ENV === 'production' 
+    ? process.env.ALLOWED_ORIGIN || '*' 
+    : '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   // 处理预检请求
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+  
+  // 只允许POST方法
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: '只允许POST方法' });
   }
   
   // 根据路径分发请求
