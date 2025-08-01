@@ -1,0 +1,21 @@
+{
+  "name": "cloudvault",
+  "version": "1.0.0",
+  "description": "安全的文本数据存储服务，通过后端代理LeanCloud API",
+  "main": "api/index.ts",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel deploy",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "leancloud-storage": "^4.13.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.4.0",
+    "typescript": "^5.1.6",
+    "vercel": "^32.4.1"
+  }
+}
