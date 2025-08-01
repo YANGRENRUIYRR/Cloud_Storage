@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安全数据存储 | CloudVault</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36CFC9',
+                        accent: '#722ED1',
+                        neutral: '#1F2937',
+                        'neutral-light': '#F3F4F6',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'card': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        'card-hover': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    }
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .bg-gradient-primary {
+                background: linear-gradient(135deg, #165DFF 0%, #722ED1 100%);
+            }
+            .password-strength-0 { width: 0%; }
+            .password-strength-1 { width: 25%; background-color: #ef4444; }
+            .password-strength-2 { width: 50%; background-color: #f59e0b; }
+            .password-strength-3 { width: 75%; background-color: #3b82f6; }
+            .password-strength-4 { width: 100%; background-color: #10b981; }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 text-neutral min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <header id="navbar" class="bg-white shadow-md fixed w-full z-50 transition-custom">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-database text-primary text-2xl"></i>
+                <span class="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">CloudVault</span>
+            </div>
+            
+            <nav class="hidden md:flex items-center space-x-8">
+                <a href="#features" class="text-gray-600 hover:text-primary transition-custom">功能</a>
+                <a href="#how-it-works" class="text-gray-600 hover:text-primary transition-custom">使用方法</a>
+                <a href="#about" class="text-gray-600 hover:text-primary transition-custom">关于</a>
+            </nav>
+            
+            <div class="flex items-center">
+                <button id="mobileMenuBtn" class="md:hidden text-gray-600">
+                    <i class="fa fa-bars text-xl"></i>
+                </button>
+                <button id="manageDataBtn" class="hidden md:block px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-custom shadow-md hover:shadow-lg">
+                    管理我的数据
+                </button>
+            </div>
+        </div>
+        
+        <!-- 移动端菜单 -->
+        <div id="mobileMenu" class="md:hidden hidden bg-white border-t border-gray-100">
+            <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+                <a href="#features" class="py-2 text-gray-600 hover:text-primary transition-custom">功能</a>
+                <a href="#how-it-works" class="py-2 text-gray-600 hover:text-primary transition-custom">使用方法</a>
+                <a href="#about" class="py-2 text-gray-600 hover:text-primary transition-custom">关于</a>
+                <button id="mobileManageDataBtn" class="py-2 mt-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-custom">
+                    管理我的数据
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="flex-grow pt-16">
+        <!-- 英雄区 -->
+        <section class="bg-gradient-to-br from-primary/5 to-accent/5 py-16 md:py-24">
+            <div class="container mx-auto px-4">
+                <div class="flex flex-col md:flex-row items-center">
+                    <div class="md:w-1/2 mb-10 md:mb-0">
+                        <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold leading-tight text-neutral mb-6">
+                            无需登录，<br>
+                            <span class="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">安全存储数据</span>
+                        </h1>
+                        <p class="text-gray-600 text-lg mb-8 max-w-lg">
+                            简单、安全、无需注册的临时文本数据存储解决方案。设置密码保护您的重要信息，随时访问，所有数据加密存储。
+                        </p>
+                        <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                            <button id="heroAddDataBtn" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-custom shadow-lg hover:shadow-xl text-center">
+                                <i class="fa fa-plus mr-2"></i> 添加新数据
+                            </button>
+                            <button id="heroManageDataBtn" class="px-6 py-3 border border-gray-300 rounded-lg hover:border-primary hover:text-primary transition-custom text-center">
+                                管理我的数据
+                            </button>
+                        </div>
+                    </div>
+                    <div class="md:w-1/2">
+                        <div class="relative">
+                            <div class="absolute -top-4 -left-4 w-full h-full bg-primary/20 rounded-2xl transform rotate-3"></div>
+                            <div class="absolute -bottom-4 -right-4 w-full h-full bg-accent/20 rounded-2xl transform -rotate-3"></div>
+                            <img src="https://picsum.photos/id/180/600/400" alt="安全数据存储概念图" class="relative z-10 rounded-2xl shadow-xl w-full">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 功能区 -->
+        <section id="features" class="py-16 bg-white">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-16">
+                    <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-neutral mb-4">为什么选择我们的存储服务</h2>
+                    <p class="text-gray-600 max-w-2xl mx-auto">简单高效的文本数据存储解决方案，无需注册即可使用，保护您的隐私和数据安全</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- 功能卡片 1 -->
+                    <div class="bg-white rounded-xl p-6 shadow-card hover:shadow-card-hover transition-custom border border-gray-100 hover:border-primary/20">
+                        <div class="w-14 h-14 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
+                            <i class="fa fa-lock text-primary text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3 text-neutral">密码保护</h3>
+                        <p class="text-gray-600">每条数据都可设置独立密码，采用高级加密算法，确保只有知道密码的人才能访问。</p>
+                    </div>
+                    
+                    <!-- 功能卡片 2 -->
+                    <div class="bg-white rounded-xl p-6 shadow-card hover:shadow-card-hover transition-custom border border-gray-100 hover:border-primary/20">
+                        <div class="w-14 h-14 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
+                            <i class="fa fa-user-secret text-primary text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3 text-neutral">无需注册</h3>
+                        <p class="text-gray-600">无需创建账户或登录，直接使用服务，保护您的隐私，不收集任何个人信息。</p>
+                    </div>
+                    
+                    <!-- 功能卡片 3 -->
+                    <div class="bg-white rounded-xl p-6 shadow-card hover:shadow-card-hover transition-custom border border-gray-100 hover:border-primary/20">
+                        <div class="w-14 h-14 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
+                            <i class="fa fa-cloud text-primary text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3 text-neutral">云端存储</h3>
+                        <p class="text-gray-600">文本数据安全存储在云端，您可以通过唯一ID和密码在任何设备上访问您的数据。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 使用方法 -->
+        <section id="how-it-works" class="py-16 bg-neutral-light">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-16">
+                    <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-neutral mb-4">简单三步，安全存储</h2>
+                    <p class="text-gray-600 max-w-2xl mx-auto">无需复杂操作，快速上手使用我们的安全文本数据存储服务</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- 步骤 1 -->
+                    <div class="bg-white rounded-xl p-6 shadow-card hover:shadow-card-hover transition-custom text-center relative">
+                        <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-bold text-xl">1</div>
+                        <div class="mt-4 mb-6">
+                            <i class="fa fa-plus-circle text-5xl text-primary mb-4"></i>
+                            <h3 class="text-xl font-bold mb-3 text-neutral">创建文本数据</h3>
+                        </div>
+                        <p class="text-gray-600">点击"添加新数据"按钮，输入您想要存储的文本内容和标题。</p>
+                    </div>
+                    
+                    <!-- 步骤 2 -->
+                    <div class="bg-white rounded-xl p-6 shadow-card hover:shadow-card-hover transition-custom text-center relative">
+                        <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-bold text-xl">2</div>
+                        <div class="mt-4 mb-6">
+                            <i class="fa fa-key text-5xl text-primary mb-4"></i>
+                            <h3 class="text-xl font-bold mb-3 text-neutral">设置密码</h3>
+                        </div>
+                        <p class="text-gray-600">为您的文本数据设置一个安全密码，用于后续访问和管理。</p>
+                    </div>
+                    
+                    <!-- 步骤 3 -->
+                    <div class="bg-white rounded-xl p-6 shadow-card hover:shadow-card-hover transition-custom text-center relative">
+                        <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-bold text-xl">3</div>
+                        <div class="mt-4 mb-6">
+                            <i class="fa fa-check-circle text-5xl text-primary mb-4"></i>
+                            <h3 class="text-xl font-bold mb-3 text-neutral">保存访问</h3>
+                        </div>
+                        <p class="text-gray-600">保存后获得唯一ID，使用ID和密码随时访问和管理您的文本数据。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 数据管理区 -->
+        <section id="dataManager" class="py-16 bg-gray-50">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-12">
+                    <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-neutral mb-4">数据管理中心</h2>
+                    <p class="text-gray-600 max-w-2xl mx-auto">添加、查看和管理您的所有加密文本数据</p>
+                </div>
+                
+                <!-- 数据操作区 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+                    <!-- 添加新数据 -->
+                    <div class="bg-white rounded-xl p-6 shadow-card">
+                        <h3 class="text-xl font-bold mb-4 text-neutral flex items-center">
+                            <i class="fa fa-plus-circle text-primary mr-2"></i> 添加新数据
+                        </h3>
+                        <form id="addDataForm" class="space-y-4">
+                            <div>
+                                <label for="dataTitle" class="block text-sm font-medium text-gray-700 mb-1">标题</label>
+                                <input type="text" id="dataTitle" placeholder="给您的数据起个标题" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" required>
+                            </div>
+                            
+                            <div>
+                                <label for="dataContent" class="block text-sm font-medium text-gray-700 mb-1">文本内容</label>
+                                <textarea id="dataContent" rows="4" placeholder="输入您要存储的文本内容..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" required></textarea>
+                            </div>
+                            
+                            <div>
+                                <label for="dataType" class="block text-sm font-medium text-gray-700 mb-1">数据类型</label>
+                                <select id="dataType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                                    <option value="text">文本</option>
+                                    <option value="note">笔记</option>
+                                    <option value="link">链接</option>
+                                    <option value="other">其他</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="dataPassword" class="block text-sm font-medium text-gray-700 mb-1">设置密码（用于访问此数据）</label>
+                                <input type="password" id="dataPassword" placeholder="设置密码" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" required>
+                                
+                                <!-- 密码强度指示器 -->
+                                <div class="mt-1 h-1 bg-gray-200 rounded-full overflow-hidden">
+                                    <div id="passwordStrength" class="h-full password-strength-0 transition-all duration-300"></div>
+                                </div>
+                                <p id="passwordStrengthText" class="mt-1 text-xs text-gray-500">请输入密码</p>
+                            </div>
+                            
+                            <button type="submit" class="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-custom shadow-md hover:shadow-lg flex items-center justify-center">
+                                <i class="fa fa-save mr-2"></i> 保存数据
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- 访问已有数据 -->
+                    <div class="bg-white rounded-xl p-6 shadow-card">
+                        <h3 class="text-xl font-bold mb-4 text-neutral flex items-center">
+                            <i class="fa fa-unlock-alt text-primary mr-2"></i> 访问已有数据
+                        </h3>
+                        <form id="accessDataForm" class="space-y-4">
+                            <div>
+                                <label for="accessDataId" class="block text-sm font-medium text-gray-700 mb-1">数据ID</label>
+                                <input type="text" id="accessDataId" placeholder="输入数据ID" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" required>
+                            </div>
+                            
+                            <div>
+                                <label for="accessDataPassword" class="block text-sm font-medium text-gray-700 mb-1">数据密码</label>
+                                <input type="password" id="accessDataPassword" placeholder="输入访问密码" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" required>
+                            </div>
+                            
+                            <button type="submit" class="w-full py-3 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-custom shadow-md hover:shadow-lg flex items-center justify-center">
+                                <i class="fa fa-eye mr-2"></i> 查看数据
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- 最近访问 -->
+                    <div class="bg-white rounded-xl p-6 shadow-card">
+                        <h3 class="text-xl font-bold mb-4 text-neutral flex items-center">
+                            <i class="fa fa-history text-primary mr-2"></i> 最近访问
+                        </h3>
+                        <div id="recentAccessList" class="space-y-3 max-h-80 overflow-y-auto">
+                            <div class="text-center text-gray-500 py-8">
+                                <i class="fa fa-clock-o text-2xl mb-2 text-gray-300"></i>
+                                <p>暂无访问记录</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 数据查看区 -->
+                <div id="dataView" class="bg-white rounded-xl p-6 shadow-card hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-neutral flex items-center">
+                            <i class="fa fa-file-text-o text-primary mr-2"></i> 数据详情
+                        </h3>
+                        <div class="flex space-x-2">
+                            <button id="copyDataIdBtn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-custom text-sm">
+                                <i class="fa fa-copy mr-1"></i> 复制ID
+                            </button>
+                            <button id="closeDataViewBtn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-custom text-sm">
+                                <i class="fa fa-times mr-1"></i> 关闭
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="border-b border-gray-200 pb-4 mb-4">
+                        <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+                            <h4 id="viewDataTitle" class="text-lg font-semibold text-neutral"></h4>
+                            <span id="viewDataType" class="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full"></span>
+                        </div>
+                        <div class="flex text-sm text-gray-500 space-x-4">
+                            <span id="viewDataCreated"><i class="fa fa-calendar-o mr-1"></i> 创建时间</span>
+                            <span id="viewDataIdDisplay"><i class="fa fa-hashtag mr-1"></i> ID: </span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h5 class="text-sm font-medium text-gray-700 mb-2">文本内容</h5>
+                        <div id="viewDataContent" class="p-4 bg-gray-50 rounded-lg min-h-[100px] whitespace-pre-wrap"></div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button id="deleteDataBtn" class="px-4 py-2 text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-custom">
+                            <i class="fa fa-trash mr-2"></i> 删除数据
+                        </button>
+                        <button id="editDataBtn" class="px-4 py-2 text-accent border border-accent/30 rounded-lg hover:bg-accent/5 transition-custom">
+                            <i class="fa fa-pencil mr-2"></i> 编辑数据
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 编辑数据区 -->
+                <div id="dataEdit" class="bg-white rounded-xl p-6 shadow-card hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-neutral flex items-center">
+                            <i class="fa fa-pencil text-accent mr-2"></i> 编辑数据
+                        </h3>
+                        <button id="cancelEditBtn" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition-custom text-sm">
+                            <i class="fa fa-times mr-1"></i> 取消
+                        </button>
+                    </div>
+                    
+                    <form id="editDataForm" class="space-y-4">
+                        <input type="hidden" id="editDataId">
+                        
+                        <div>
+                            <label for="editDataTitle" class="block text-sm font-medium text-gray-700 mb-1">标题</label>
+                            <input type="text" id="editDataTitle" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" required>
+                        </div>
+                        
+                        <div>
+                            <label for="editDataContent" class="block text-sm font-medium text-gray-700 mb-1">文本内容</label>
+                            <textarea id="editDataContent" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" required></textarea>
+                        </div>
+                        
+                        <div>
+                            <label for="editDataType" class="block text-sm font-medium text-gray-700 mb-1">数据类型</label>
+                            <select id="editDataType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                                <option value="text">文本</option>
+                                <option value="note">笔记</option>
+                                <option value="link">链接</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="editDataPassword" class="block text-sm font-medium text-gray-700 mb-1">修改密码（留空则保持原密码）</label>
+                            <input type="password" id="editDataPassword" placeholder="修改密码（可选）" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                            <button type="button" id="cancelEditFormBtn" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-custom">
+                                取消
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-custom shadow-md hover:shadow-lg">
+                                <i class="fa fa-save mr-2"></i> 保存修改
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- 关于 -->
+        <section id="about" class="py-16 bg-white">
+            <div class="container mx-auto px-4">
+                <div class="max-w-3xl mx-auto text-center">
+                    <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-neutral mb-6">关于 CloudVault</h2>
+                    <p class="text-gray-600 mb-6">
+                        CloudVault 是一个简单、安全的临时文本数据存储服务，无需注册账号即可使用。我们重视您的隐私和数据安全，所有数据都经过加密处理，只有拥有正确ID和密码的人才能访问。
+                    </p>
+                    <p class="text-gray-600">
+                        请注意，作为临时存储服务，我们不保证数据的永久保存。对于重要数据，请您做好本地备份。本服务仅支持文本数据存储，不支持文件上传。
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-neutral text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-2 mb-6 md:mb-0">
+                    <i class="fa fa-database text-primary text-2xl"></i>
+                    <span class="text-xl font-bold">CloudVault</span>
+                </div>
+                
+                <div class="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-6 md:mb-0">
+                    <a href="#features" class="text-gray-300 hover:text-white transition-custom">功能</a>
+                    <a href="#how-it-works" class="text-gray-300 hover:text-white transition-custom">使用方法</a>
+                    <a href="#about" class="text-gray-300 hover:text-white transition-custom">关于</a>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <a href="#" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-custom">
+                        <i class="fa fa-github"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-custom">
+                        <i class="fa fa-twitter"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-custom">
+                        <i class="fa fa-envelope"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="border-t border-white/10 mt-8 pt-8 text-center text-gray-400 text-sm">
+                <p>&copy; 2023 CloudVault. 保留所有权利。</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 通知提示框 -->
+    <div id="notification" class="fixed bottom-6 right-6 px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center max-w-md z-50"></div>
+
+    <!-- JavaScript -->
+    <script>
+        // DOM元素
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const addDataForm = document.getElementById('addDataForm');
+        const accessDataForm = document.getElementById('accessDataForm');
+        const dataPassword = document.getElementById('dataPassword');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const passwordStrengthText = document.getElementById('passwordStrengthText');
+        const dataView = document.getElementById('dataView');
+        const closeDataViewBtn = document.getElementById('closeDataViewBtn');
+        const copyDataIdBtn = document.getElementById('copyDataIdBtn');
+        const deleteDataBtn = document.getElementById('deleteDataBtn');
+        const editDataBtn = document.getElementById('editDataBtn');
+        const dataEdit = document.getElementById('dataEdit');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        const cancelEditFormBtn = document.getElementById('cancelEditFormBtn');
+        const editDataForm = document.getElementById('editDataForm');
+        const notification = document.getElementById('notification');
+        const recentAccessList = document.getElementById('recentAccessList');
+        
+        // 导航菜单切换
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // 密码强度检测
+        dataPassword.addEventListener('input', () => {
+            const password = dataPassword.value;
+            let strength = 0;
+            let strengthText = '';
+            
+            if (password.length > 6) strength++;
+            if (password.length > 10) strength++;
+            if (/[A-Z]/.test(password) && /[a-z]/.test(password)) strength++;
+            if (/[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) strength++;
+            
+            // 更新强度指示器
+            passwordStrength.className = 'h-full transition-all duration-300';
+            passwordStrength.classList.add(`password-strength-${strength}`);
+            
+            // 更新强度文本
+            switch(strength) {
+                case 0: strengthText = '请输入密码'; break;
+                case 1: strengthText = '弱密码 - 请增加长度和复杂度'; break;
+                case 2: strengthText = '中等 - 可以再增加一些复杂度'; break;
+                case 3: strengthText = '良好 - 不错的密码'; break;
+                case 4: strengthText = '强密码 - 非常安全'; break;
+            }
+            passwordStrengthText.textContent = strengthText;
+        });
+
+        // 显示通知
+        function showNotification(message, isError = false) {
+            notification.textContent = message;
+            notification.className = 'fixed bottom-6 right-6 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 flex items-center max-w-md z-50';
+            
+            if (isError) {
+                notification.classList.add('bg-red-500', 'text-white');
+            } else {
+                notification.classList.add('bg-green-500', 'text-white');
+            }
+            
+            // 显示通知
+            setTimeout(() => {
+                notification.classList.remove('translate-y-20', 'opacity-0');
+            }, 10);
+            
+            // 3秒后隐藏
+            setTimeout(() => {
+                notification.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // 添加新数据（通过后端API）
+        addDataForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('dataTitle').value;
+            const content = document.getElementById('dataContent').value;
+            const type = document.getElementById('dataType').value;
+            const password = dataPassword.value;
+            
+            try {
+                // 调用后端API
+                const response = await fetch('/api/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ title, content, type, password })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || '保存数据失败');
+                }
+                
+                // 显示成功通知
+                showNotification(`文本数据保存成功！您的数据ID是: ${result.id}`);
+                
+                // 重置表单
+                addDataForm.reset();
+                passwordStrength.className = 'h-full password-strength-0';
+                passwordStrengthText.textContent = '请输入密码';
+                
+                // 添加到最近访问
+                addToRecentAccess(result.id, title, type);
+                
+            } catch (error) {
+                console.error('保存数据失败:', error);
+                showNotification(error.message || '保存数据失败，请稍后再试', true);
+            }
+        });
+
+        // 访问数据（通过后端API）
+        accessDataForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const dataId = document.getElementById('accessDataId').value;
+            const password = document.getElementById('accessDataPassword').value;
+            
+            try {
+                // 调用后端API
+                const response = await fetch('/api/get', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id: dataId, password })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || '访问数据失败');
+                }
+                
+                // 显示数据
+                document.getElementById('viewDataTitle').textContent = result.title;
+                document.getElementById('viewDataType').textContent = 
+                    result.type === 'text' ? '文本' :
+                    result.type === 'note' ? '笔记' :
+                    result.type === 'link' ? '链接' : '其他';
+                
+                document.getElementById('viewDataCreated').textContent = 
+                    `<i class="fa fa-calendar-o mr-1"></i> 创建于: ${formatDate(result.createdAt)}`;
+                
+                document.getElementById('viewDataIdDisplay').textContent = 
+                    `<i class="fa fa-hashtag mr-1"></i> ID: ${result.id}`;
+                
+                document.getElementById('viewDataContent').textContent = result.content;
+                
+                // 存储当前查看的数据ID和密码，用于后续操作
+                dataView.setAttribute('data-id', result.id);
+                dataView.setAttribute('data-password', password);
+                
+                // 显示数据视图
+                dataView.classList.remove('hidden');
+                dataEdit.classList.add('hidden');
+                
+                // 添加到最近访问
+                addToRecentAccess(result.id, result.title, result.type);
+                
+                // 滚动到数据查看区
+                dataView.scrollIntoView({ behavior: 'smooth' });
+                
+            } catch (error) {
+                console.error('访问数据失败:', error);
+                showNotification(error.message || '访问数据失败，可能是ID错误或密码不正确', true);
+            }
+        });
+
+        // 关闭数据查看
+        closeDataViewBtn.addEventListener('click', () => {
+            dataView.classList.add('hidden');
+        });
+
+        // 复制数据ID
+        copyDataIdBtn.addEventListener('click', () => {
+            const dataId = dataView.getAttribute('data-id');
+            navigator.clipboard.writeText(dataId)
+                .then(() => showNotification('数据ID已复制到剪贴板'))
+                .catch(err => showNotification('复制失败，请手动复制', true));
+        });
+
+        // 删除数据（通过后端API）
+        deleteDataBtn.addEventListener('click', async () => {
+            const dataId = dataView.getAttribute('data-id');
+            const password = dataView.getAttribute('data-password');
+            const confirmDelete = confirm('确定要删除这条数据吗？此操作不可恢复！');
+            
+            if (!confirmDelete) return;
+            
+            try {
+                // 调用后端API
+                const response = await fetch('/api/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id: dataId, password })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || '删除数据失败');
+                }
+                
+                showNotification('数据已成功删除');
+                dataView.classList.add('hidden');
+                
+                // 从最近访问中移除
+                removeFromRecentAccess(dataId);
+                
+            } catch (error) {
+                console.error('删除数据失败:', error);
+                showNotification(error.message || '删除数据失败，请稍后再试', true);
+            }
+        });
+
+        // 编辑数据
+        editDataBtn.addEventListener('click', async () => {
+            const dataId = dataView.getAttribute('data-id');
+            
+            try {
+                // 获取数据详情用于编辑
+                const response = await fetch('/api/get', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        id: dataId, 
+                        password: dataView.getAttribute('data-password') 
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || '获取数据失败');
+                }
+                
+                // 填充编辑表单
+                document.getElementById('editDataId').value = dataId;
+                document.getElementById('editDataTitle').value = result.title;
+                document.getElementById('editDataType').value = result.type;
+                document.getElementById('editDataContent').value = result.content;
+                
+                // 显示编辑表单，隐藏查看表单
+                dataEdit.classList.remove('hidden');
+                dataView.classList.add('hidden');
+                
+            } catch (error) {
+                console.error('加载编辑数据失败:', error);
+                showNotification(error.message || '加载数据失败，请稍后再试', true);
+            }
+        });
+
+        // 取消编辑
+        cancelEditBtn.addEventListener('click', () => {
+            dataEdit.classList.add('hidden');
+            dataView.classList.remove('hidden');
+        });
+
+        cancelEditFormBtn.addEventListener('click', () => {
+            dataEdit.classList.add('hidden');
+            dataView.classList.remove('hidden');
+        });
+
+        // 保存编辑数据（通过后端API）
+        editDataForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const dataId = document.getElementById('editDataId').value;
+            const title = document.getElementById('editDataTitle').value;
+            const content = document.getElementById('editDataContent').value;
+            const type = document.getElementById('editDataType').value;
+            const newPassword = document.getElementById('editDataPassword').value;
+            const currentPassword = dataView.getAttribute('data-password');
+            
+            try {
+                // 调用后端API
+                const response = await fetch('/api/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        id: dataId, 
+                        title, 
+                        content, 
+                        type, 
+                        currentPassword,
+                        newPassword 
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || '更新数据失败');
+                }
+                
+                showNotification('数据已成功更新');
+                
+                // 重新加载并显示更新后的数据
+                document.getElementById('accessDataId').value = dataId;
+                document.getElementById('accessDataPassword').value = newPassword || currentPassword;
+                
+                // 更新存储的密码
+                if (newPassword) {
+                    dataView.setAttribute('data-password', newPassword);
+                }
+                
+                // 模拟表单提交
+                const event = new Event('submit', { cancelable: true });
+                accessDataForm.dispatchEvent(event);
+                
+                // 隐藏编辑表单
+                dataEdit.classList.add('hidden');
+                
+            } catch (error) {
+                console.error('更新数据失败:', error);
+                showNotification(error.message || '更新数据失败，请稍后再试', true);
+            }
+        });
+
+        // 最近访问管理
+        function addToRecentAccess(dataId, title, type) {
+            // 获取现有记录
+            let recentAccess = JSON.parse(localStorage.getItem('recentAccess') || '[]');
+            
+            // 移除已存在的相同ID记录（避免重复）
+            recentAccess = recentAccess.filter(item => item.id !== dataId);
+            
+            // 添加新记录
+            const typeText = type === 'text' ? '文本' :
+                             type === 'note' ? '笔记' :
+                             type === 'link' ? '链接' : '其他';
+                             
+            recentAccess.unshift({
+                id: dataId,
+                title: title,
+                type: type,
+                typeText: typeText,
+                accessedAt: new Date().toISOString()
+            });
+            
+            // 限制最多10条记录
+            if (recentAccess.length > 10) {
+                recentAccess = recentAccess.slice(0, 10);
+            }
+            
+            // 保存到本地存储
+            localStorage.setItem('recentAccess', JSON.stringify(recentAccess));
+            
+            // 更新UI
+            renderRecentAccess();
+        }
+
+        function removeFromRecentAccess(dataId) {
+            let recentAccess = JSON.parse(localStorage.getItem('recentAccess') || '[]');
+            recentAccess = recentAccess.filter(item => item.id !== dataId);
+            localStorage.setItem('recentAccess', JSON.stringify(recentAccess));
+            renderRecentAccess();
+        }
+
+        function renderRecentAccess() {
+            const recentAccess = JSON.parse(localStorage.getItem('recentAccess') || '[]');
+            
+            if (recentAccess.length === 0) {
+                recentAccessList.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fa fa-clock-o text-2xl mb-2 text-gray-300"></i>
+                        <p>暂无访问记录</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            recentAccess.forEach(item => {
+                html += `
+                    <div class="p-3 border border-gray-100 rounded-lg hover:border-primary/30 hover:bg-primary/5 transition-custom">
+                        <div class="flex justify-between items-start mb-1">
+                            <h4 class="font-medium text-neutral truncate max-w-[200px]">${item.title}</h4>
+                            <span class="px-1.5 py-0.5 bg-primary/10 text-primary text-xs rounded">${item.typeText}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-500 truncate text-xs max-w-[180px]">ID: ${item.id}</span>
+                            <button class="text-primary hover:text-primary/80 text-xs access-recent-btn" data-id="${item.id}">
+                                再次访问
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            recentAccessList.innerHTML = html;
+            
+            // 添加再次访问事件监听
+            document.querySelectorAll('.access-recent-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const dataId = btn.getAttribute('data-id');
+                    document.getElementById('accessDataId').value = dataId;
+                    document.getElementById('accessDataPassword').focus();
+                });
+            });
+        }
+
+        // 工具函数：格式化日期
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 渲染最近访问记录
+            renderRecentAccess();
+            
+            // 平滑滚动
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                        
+                        // 如果是移动端，点击后关闭菜单
+                        if (!mobileMenu.classList.contains('hidden')) {
+                            mobileMenu.classList.add('hidden');
+                        }
+                    }
+                });
+            });
+            
+            // 管理数据按钮点击事件
+            document.getElementById('manageDataBtn').addEventListener('click', () => {
+                document.getElementById('dataManager').scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            document.getElementById('mobileManageDataBtn').addEventListener('click', () => {
+                document.getElementById('dataManager').scrollIntoView({ behavior: 'smooth' });
+                mobileMenu.classList.add('hidden');
+            });
+            
+            document.getElementById('heroManageDataBtn').addEventListener('click', () => {
+                document.getElementById('dataManager').scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            document.getElementById('heroAddDataBtn').addEventListener('click', () => {
+                document.getElementById('dataTitle').focus();
+                document.getElementById('dataManager').scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>
+    
